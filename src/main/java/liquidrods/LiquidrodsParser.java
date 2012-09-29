@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * regexp FTW !
+ * The template files parser
  */
 public class LiquidrodsParser {
 
@@ -57,6 +57,10 @@ public class LiquidrodsParser {
     private Token eof = null;
     private int row = 1, col = 0;
 
+    /**
+     * @param reader   the reader to be parsed
+     * @param handlers The tag handlers keyed by the tag they handle. Used in the parsing to handle body and bodyless tags
+     */
     public LiquidrodsParser(Reader reader, Map<String, BlockHandler> handlers) {
         this.handlers = handlers;
         this.reader = new BufferedReader(reader);
@@ -144,6 +148,11 @@ public class LiquidrodsParser {
         return current.type == type;
     }
 
+    /**
+     * Parses the template into a list of root nodes
+     *
+     * @return the template DOM
+     */
     public List<LiquidrodsNode> parse() {
         final List<LiquidrodsNode> rootNodes = start();
         if (!is(Token.Type.EOF)) {

@@ -7,15 +7,27 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Used to resolve property selectors against a model object using reflection.
+ * Contexts are hierarchical. A tag may decide to change the context of its childrenby pasing them a part of the original model.
+ * For example, the <code>{% for %}</code> tag uses the original model to resolve the collection property but passes a context wrapping the current collection element being iterated on to its children.
+ */
 public class Context {
+    /**
+     * To indicate the absence of a value, not to be confused with null which is a valid value
+     */
     public static final Object NOT_FOUND = new Object();
-    public static final Class[] NO_ARGS = new Class[]{};
+    private static final Class[] NO_ARGS = new Class[]{};
     private static Map<Key, Accessor> accessorCache = new ConcurrentHashMap<Key, Accessor>();
     private static Map<String, List<String>> partsCache = new ConcurrentHashMap<String, List<String>>();
     private final Context parent;
     private final Object data;
     private final Object helper;
 
+    /**
+     * @param parent the parent context, if any. Can be null for a root context.
+     * @param root   the model object against which this context will resolve properties selectors.
+     */
     public Context(Context parent, Object root) {
         this.parent = parent;
         this.data = root;
@@ -64,6 +76,12 @@ public class Context {
         return res;
     }
 
+    /**
+     * Evaluates a property selector against the specified model object and returns its value. If the property is not found, this method delegates the parent context if one was provided. If not, returs null.
+     *
+     * @param key the property selector
+     * @return the property value
+     */
     public Object resolve(String key) {
         if (".".equals(key) || "this".equals(key)) {
             return data;
@@ -113,6 +131,12 @@ public class Context {
         }
     }
 
+    /**
+     * Override to extend a model with a custom logic process. For example, the <code>{% for %}</code> tag extends the iteration model with extra properties like the iteration index (#).
+     *
+     * @param key the property name to evaluate
+     * @return a value if the property is resolved, including null, or NOT_FOUND if not.
+     */
     protected Object extend(String key) {
         return NOT_FOUND;
     }

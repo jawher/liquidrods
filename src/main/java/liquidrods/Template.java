@@ -7,10 +7,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A parsed template
+ */
 public class Template {
     private List<LiquidrodsNode> rootNodes;
     private Liquidrods liquidrods;
 
+    /**
+     * Creates a template. You shouldn't be using this most of the time, but rather {@link Liquidrods#parse(java.io.Reader)} or {@link Liquidrods#parse(String)} to create a template.
+     *
+     * @param rootNodes  the top level nodes of the template
+     * @param liquidrods the liquidrods instance to be used with this template.
+     */
     public Template(List<LiquidrodsNode> rootNodes, Liquidrods liquidrods) {
         this.rootNodes = rootNodes;
         this.liquidrods = liquidrods;
@@ -111,6 +120,12 @@ public class Template {
         return rootNodes;
     }
 
+    /**
+     * Render this template using the specified model into the specified writer
+     *
+     * @param model the model object to resolve properties against
+     * @param out   where to write the result
+     */
     public void render(Object model, Writer out) {
         Context context = new Context(null, model);
         try {
