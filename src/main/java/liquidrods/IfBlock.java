@@ -31,7 +31,6 @@ public class IfBlock implements BlockHandler {
             doit = !((Collection) value).isEmpty();
         }
 
-        Context subContext = new Context(context, value);
         for (LiquidrodsNode child : block.getChildren()) {
             if (child instanceof LiquidrodsNode.Block && ("else".equals(((LiquidrodsNode.Block) child).getName()))) {
                 if (doit) {
@@ -39,7 +38,7 @@ public class IfBlock implements BlockHandler {
                 }
                 doit = !doit;
             } else if (doit) {
-                config.defaultRenderer().render(child, subContext, config, out);
+                config.defaultRenderer().render(child, context, config, out);
             }
         }
     }
