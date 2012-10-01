@@ -225,8 +225,7 @@ public class LiquidrodsTest {
             }
 
             @Override
-            public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
-                LiquidrodsNode.Block b = (LiquidrodsNode.Block) node;
+            public void render(LiquidrodsNode.Block b, Context context, Config config, Writer out) throws IOException {
                 out.write(b.getName());
                 out.write(":");
                 out.write(String.valueOf(context.resolve(b.getArg())));
@@ -248,8 +247,7 @@ public class LiquidrodsTest {
             }
 
             @Override
-            public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
-                LiquidrodsNode.Block b = (LiquidrodsNode.Block) node;
+            public void render(LiquidrodsNode.Block b, Context context, Config config, Writer out) throws IOException {
                 out.write(b.getName());
                 out.write(":");
                 out.write(String.valueOf(context.resolve(b.getArg())));
@@ -274,15 +272,14 @@ public class LiquidrodsTest {
             }
 
             @Override
-            public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
-                LiquidrodsNode.Block b = (LiquidrodsNode.Block) node;
+            public void render(LiquidrodsNode.Block b, Context context, Config config, Writer out) throws IOException {
                 out.write(b.getName());
                 out.write(":");
                 out.write(String.valueOf(context.resolve(b.getArg())));
                 Context ex = new Context(context, model) {
                     @Override
                     protected Object extend(String key) {
-                        if("ex".equals(key)) {
+                        if ("ex".equals(key)) {
                             return "_";
                         } else {
                             return NOT_FOUND;

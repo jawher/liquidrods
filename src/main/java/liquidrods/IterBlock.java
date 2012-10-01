@@ -35,8 +35,7 @@ public class IterBlock implements BlockHandler {
     }
 
     @Override
-    public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
-        LiquidrodsNode.Block block = (LiquidrodsNode.Block) node;
+    public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
         Object value = context.resolve(block.getArg());
         Iterator<?> coll;
         if (value == null) {

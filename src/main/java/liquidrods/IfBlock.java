@@ -17,8 +17,7 @@ public class IfBlock implements BlockHandler {
     }
 
     @Override
-    public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
-        LiquidrodsNode.Block block = (LiquidrodsNode.Block) node;
+    public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
         Object value = context.resolve(block.getArg());
         boolean doit = true;
         if (value == null) {
@@ -53,7 +52,7 @@ public class IfBlock implements BlockHandler {
         }
 
         @Override
-        public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
+        public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
             // nop. Daddy if will do just fine on his own.
         }
     }

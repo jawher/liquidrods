@@ -36,6 +36,19 @@ public class Config {
         public String escape(String value);
     }
 
+    public interface Renderer {
+        /**
+         * This method gets called when the tag is to be rendered
+         *
+         * @param node    the node in the template to be rendered. In cas of tag, it should be cast to {@link LiquidrodsNode.Block} to gain access to its argument (if provided) and children (i.e. body)
+         * @param context the model context associated with this node. Should be used to resolve property selectors.
+         * @param config  the configuration to use
+         * @param out     where to render this tag
+         * @throws IOException so that you don't have to handle this exception when you use the writer
+         */
+        void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException;
+    }
+
     private TemplateLoader templateLoader = new TemplateLoader() {
         @Override
         public Reader load(String name) {
@@ -67,18 +80,13 @@ public class Config {
             }
 
             @Override
-            public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
+            public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
                 // nop. Mommy Template will take care of me
             }
         });
     }
 
-    private BlockHandler defaultRenderer = new BlockHandler() {
-
-        @Override
-        public boolean wantsCloseTag() {
-            return false;//doesn't matter
-        }
+    private Renderer defaultRenderer = new Renderer() {
 
         @Override
         public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
@@ -101,7 +109,7 @@ public class Config {
                 if (handler == null) {
                     throw new RuntimeException("No handler for block " + block.getName());
                 } else {
-                    handler.render(node, context, config, out);
+                    handler.render(block, context, config, out);
                 }
             }
         }
@@ -196,7 +204,7 @@ public class Config {
     /**
      * @return the default renderer, to be used by tag handlers to render other tags
      */
-    public BlockHandler defaultRenderer() {
+    public Renderer defaultRenderer() {
         return defaultRenderer;
     }
 
@@ -206,7 +214,7 @@ public class Config {
      * @param defaultRenderer the default renderer to use
      * @return self, to enable chaining
      */
-    public Config defaultRenderer(BlockHandler defaultRenderer) {
+    public Config defaultRenderer(Renderer defaultRenderer) {
         this.defaultRenderer = defaultRenderer;
         return this;
     }
