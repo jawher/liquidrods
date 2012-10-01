@@ -11,14 +11,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class LiquidrodsTest {
-    private String render(Liquidrods lr, String template, Object model) {
+    private String render(Config config, String template, Object model) {
         StringWriter writer = new StringWriter();
-        lr.parse(new StringReader(template)).render(model, writer);
+        Liquidrods.parse(new StringReader(template), config).render(model, writer);
         return writer.getBuffer().toString();
     }
 
     private String render(String template, Object model) {
-        return render(new Liquidrods(), template, model);
+        return render(new Config(), template, model);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class LiquidrodsTest {
         final Object model = Collections.singletonMap("s", "stuff");
 
         String template = "{{s}} - {{{s}}}";
-        assertEquals("escaped - stuff", render(new Liquidrods().escaper(new Liquidrods.Escaper() {
+        assertEquals("escaped - stuff", render(new Config().escaper(new Config.Escaper() {
             @Override
             public String escape(String value) {
                 return "escaped";
@@ -83,7 +83,7 @@ public class LiquidrodsTest {
     public void testUsesSuppliedTemplateLoader() {
         final Object model = Collections.emptyMap();
 
-        assertEquals("name", render(new Liquidrods().templateLoader(new Liquidrods.TemplateLoader() {
+        assertEquals("name", render(new Config().templateLoader(new Config.TemplateLoader() {
             @Override
             public Reader load(String name) {
                 return new StringReader(name);
@@ -177,7 +177,7 @@ public class LiquidrodsTest {
     public void testInclusion() {
         final Object model = Collections.emptyMap();
         String template = "before|{% include f.inc %}|after";
-        Liquidrods lr = new Liquidrods().templateLoader(new Liquidrods.TemplateLoader() {
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
             @Override
             public Reader load(String name) {
                 return new StringReader(name);
@@ -191,7 +191,7 @@ public class LiquidrodsTest {
         final Object model = Collections.emptyMap();
         final String parentTemplate = "parentBefore|{% placeholder a %}junk{% end %}|parent|{% placeholder b %}junk{% end %}|parentAfter";
         String childTemplate = "thresh|{% extends parent.inc %}{% define a %}aReplacement{% end %}{% define b %}bReplacement{% end %}{% end %}|thresh";
-        Liquidrods lr = new Liquidrods().templateLoader(new Liquidrods.TemplateLoader() {
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
             @Override
             public Reader load(String name) {
                 return new StringReader(parentTemplate);
@@ -205,7 +205,7 @@ public class LiquidrodsTest {
         final Object model = Collections.emptyMap();
         final String parentTemplate = "parentBefore|{% placeholder a %}junk{% end %}|parent|{% placeholder b %}keep{% end %}|parentAfter";
         String childTemplate = "thresh|{% extends parent.inc %}{% define a %}aReplacement{% end %}{% end %}|thresh";
-        Liquidrods lr = new Liquidrods().templateLoader(new Liquidrods.TemplateLoader() {
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
             @Override
             public Reader load(String name) {
                 return new StringReader(parentTemplate);
@@ -218,14 +218,14 @@ public class LiquidrodsTest {
     public void testCustomHandlerWithNoCloseableTag() {
         final Object model = Collections.singletonMap("x", "y");
         String template = "thresh|{% custom x %}|thresh";
-        Liquidrods lr = new Liquidrods().registerHandler("custom", new BlockHandler() {
+        Config lr = new Config().registerHandler("custom", new BlockHandler() {
             @Override
             public boolean wantsCloseTag() {
                 return false;
             }
 
             @Override
-            public void render(LiquidrodsNode node, Context context, BlockHandler defaultBlockHandler, Writer out) throws IOException {
+            public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
                 LiquidrodsNode.Block b = (LiquidrodsNode.Block) node;
                 out.write(b.getName());
                 out.write(":");
@@ -241,20 +241,20 @@ public class LiquidrodsTest {
         model.put("x", "y");
         model.put("a", "b");
         String template = "thresh|{% custom x %}text{{a}}{% end %}|thresh";
-        Liquidrods lr = new Liquidrods().registerHandler("custom", new BlockHandler() {
+        Config lr = new Config().registerHandler("custom", new BlockHandler() {
             @Override
             public boolean wantsCloseTag() {
                 return true;
             }
 
             @Override
-            public void render(LiquidrodsNode node, Context context, BlockHandler defaultBlockHandler, Writer out) throws IOException {
+            public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
                 LiquidrodsNode.Block b = (LiquidrodsNode.Block) node;
                 out.write(b.getName());
                 out.write(":");
                 out.write(String.valueOf(context.resolve(b.getArg())));
                 for (LiquidrodsNode child : b.getChildren()) {
-                    defaultBlockHandler.render(child, context, defaultBlockHandler, out);
+                    config.defaultRenderer().render(child, context, config, out);
                 }
             }
         });
@@ -267,14 +267,14 @@ public class LiquidrodsTest {
         model.put("x", "y");
         model.put("a", "b");
         String template = "thresh|{% custom x %}{{ex}}text{{a}}{% end %}|thresh";
-        Liquidrods lr = new Liquidrods().registerHandler("custom", new BlockHandler() {
+        Config lr = new Config().registerHandler("custom", new BlockHandler() {
             @Override
             public boolean wantsCloseTag() {
                 return true;
             }
 
             @Override
-            public void render(LiquidrodsNode node, Context context, BlockHandler defaultBlockHandler, Writer out) throws IOException {
+            public void render(LiquidrodsNode node, Context context, Config config, Writer out) throws IOException {
                 LiquidrodsNode.Block b = (LiquidrodsNode.Block) node;
                 out.write(b.getName());
                 out.write(":");
@@ -290,7 +290,7 @@ public class LiquidrodsTest {
                     }
                 };
                 for (LiquidrodsNode child : b.getChildren()) {
-                    defaultBlockHandler.render(child, ex, defaultBlockHandler, out);
+                    config.defaultRenderer().render(child, ex, config, out);
                 }
             }
         });

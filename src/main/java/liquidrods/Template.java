@@ -8,21 +8,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A parsed template
+ * A parsed template that can be rendered using {@link Template#render(Object, java.io.Writer)}
  */
 public class Template {
     private List<LiquidrodsNode> rootNodes;
-    private Liquidrods liquidrods;
+    private Config config;
 
     /**
      * Creates a template. You shouldn't be using this most of the time, but rather {@link Liquidrods#parse(java.io.Reader)} or {@link Liquidrods#parse(String)} to create a template.
      *
-     * @param rootNodes  the top level nodes of the template
-     * @param liquidrods the liquidrods instance to be used with this template.
+     * @param rootNodes the top level nodes of the template
+     * @param config    the liquidrods instance to be used with this template.
      */
-    public Template(List<LiquidrodsNode> rootNodes, Liquidrods liquidrods) {
+    public Template(List<LiquidrodsNode> rootNodes, Config config) {
         this.rootNodes = rootNodes;
-        this.liquidrods = liquidrods;
+        this.config = config;
         processIncludes();
         processExtends();
     }
@@ -33,7 +33,7 @@ public class Template {
             if (node instanceof LiquidrodsNode.Block) {
                 LiquidrodsNode.Block block = (LiquidrodsNode.Block) node;
                 if ("include".equals(block.getName())) {
-                    final Template included = liquidrods.parse(block.getArg());
+                    final Template included = Liquidrods.parse(block.getArg(), config);
                     mergedNodes.addAll(included.getRootNodes());
                 } else {
                     mergedNodes.add(block);
@@ -75,7 +75,7 @@ public class Template {
         }
 
         if (extend != null) {
-            Template parent = liquidrods.parse(extend.getArg());
+            Template parent = Liquidrods.parse(extend.getArg(), config);
             final Map<String, List<LiquidrodsNode>> defines = processDefines(extend);
             List<LiquidrodsNode> mergedNodes = new ArrayList<LiquidrodsNode>(parent.rootNodes.size());
             for (LiquidrodsNode node : parent.rootNodes) {
@@ -130,7 +130,7 @@ public class Template {
         Context context = new Context(null, model);
         try {
             for (LiquidrodsNode node : rootNodes) {
-                liquidrods.defaultRenderer.render(node, context, liquidrods.defaultRenderer, out);
+                config.defaultRenderer().render(node, context, config, out);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

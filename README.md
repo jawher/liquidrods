@@ -25,15 +25,15 @@ To use this library in your projects, add the following to the `dependencies` se
 </dependency>
 ```
 
-The API's entry point is the `liquidrods.Liquidrods` class. Start by creating an instance, parse a template into a `Template`object, and then call `render` on the latter:
+The API's entry point is the `liquidrods.Liquidrods` class. Call the `parse` method on it to parse a template into a `Template`object
+which could then be rendered by calling `render`:
 
 ```java
-Liquidrods rods = new Liquidrods();
-Template template = rods.parse("list.html");
+Template template = Liquidrods.parse("list.html");
 template.render(model, writer);
 ```
 
-The parse method comes in two flavours:
+The parse method comes in 2 (4 really, we'll come to that later) flavours:
 
 * `parse(String name)`: where name is a template name. You can configure Liquidrods with a `TemplateLoader` so that it knows how to load templates by name. By default, it'll look for the template in the classpath.
 * `parse(Reader template)`: there. Nuff said.
@@ -41,9 +41,7 @@ The parse method comes in two flavours:
 Both `parse` method variants return a `Template` object ready to be used to render the template. To do so, you'll need to call the `render` method and provide:
 
 * A model: the data backing the template. It can be anything: a map, a list, or any other object.
-* A writer: where `Liquidrods` will output the rendered template.
-
-
+* A writer: where the rendered template will be output.
 
 
 Template syntax
