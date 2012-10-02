@@ -84,6 +84,31 @@ public class Config {
                 // nop. Mommy Template will take care of me
             }
         });
+        registerHandler("extends", new BlockHandler() {
+            @Override
+            public boolean wantsCloseTag() {
+                return false;
+            }
+
+            @Override
+            public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
+                // nop. Mommy Template will take care of me
+            }
+        });
+
+        registerHandler("block", new BlockHandler() {
+            @Override
+            public boolean wantsCloseTag() {
+                return true;
+            }
+
+            @Override
+            public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
+                for (LiquidrodsNode child : block.getChildren()) {
+                    config.defaultRenderer().render(child, context, config, out);
+                }
+            }
+        });
     }
 
     private Renderer defaultRenderer = new Renderer() {

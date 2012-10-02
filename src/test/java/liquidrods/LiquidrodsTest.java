@@ -207,8 +207,8 @@ public class LiquidrodsTest {
     @Test
     public void testInheritance() {
         final Object model = Collections.emptyMap();
-        final String parentTemplate = "parentBefore|{% placeholder a %}junk{% end %}|parent|{% placeholder b %}junk{% end %}|parentAfter";
-        String childTemplate = "thresh|{% extends parent.inc %}{% define a %}aReplacement{% end %}{% define b %}bReplacement{% end %}{% end %}|thresh";
+        final String parentTemplate = "parentBefore|{% block a %}junk{% end %}|parent|{% block b %}junk{% end %}|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}aReplacement{% end %}{% block b %}bReplacement{% end %}|thresh";
         Config lr = new Config().templateLoader(new Config.TemplateLoader() {
             @Override
             public Reader load(String name) {
@@ -221,8 +221,8 @@ public class LiquidrodsTest {
     @Test
     public void testInheritanceKeepsUndefinedPlaceholders() {
         final Object model = Collections.emptyMap();
-        final String parentTemplate = "parentBefore|{% placeholder a %}junk{% end %}|parent|{% placeholder b %}keep{% end %}|parentAfter";
-        String childTemplate = "thresh|{% extends parent.inc %}{% define a %}aReplacement{% end %}{% end %}|thresh";
+        final String parentTemplate = "parentBefore|{% block a %}junk{% end %}|parent|{% block b %}keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}aReplacement{% end %}|thresh";
         Config lr = new Config().templateLoader(new Config.TemplateLoader() {
             @Override
             public Reader load(String name) {
@@ -230,6 +230,96 @@ public class LiquidrodsTest {
             }
         });
         assertEquals("parentBefore|aReplacement|parent|keep|parentAfter", render(lr, childTemplate, model));
+    }
+
+    @Test
+    public void test2LevelInheritance() {
+        final Object model = Collections.emptyMap();
+        final String parentTemplate0 = "parent0Before" +
+                "|{% block a %}junk{% end %}" +
+                "|parent|" +
+                "{% block b %}junk{% end %}" +
+                "|{% block d %}junk{% end %}" +
+                "|parent0After";
+        final String parentTemplate1 = "junk|" +
+                "{% extends 0 %}" +
+                "{% block a %}from template 1{% end %}" +
+                "|{% block c %}junk{% end %}" +
+                "|junk";
+
+        String childTemplate = "thresh" +
+                "|{% extends 1 %}" +
+                "{% block a %}aReplacement{% end %}" +
+                "{% block b %}bReplacement" +
+                /**/    "|{% block c %}cReplacement{% end %}" +
+                "{% end %}" +
+                "{% block d %}dReplacement{% end %}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                if ("0".equals(name)) return new StringReader(parentTemplate0);
+                else if ("1".equals(name)) return new StringReader(parentTemplate1);
+                else throw new RuntimeException("Unexpected load template with name " + name);
+            }
+        });
+
+        assertEquals("parent0Before|aReplacement|parent|bReplacement|cReplacement|dReplacement|parent0After", render(lr, childTemplate, model));
+    }
+
+    @Test(expected = Exception.class)
+    public void testInheritanceFailsWithVarBeforeExtends() {
+        final Object model = Collections.emptyMap();
+        final String parentTemplate = "parentBefore|{% block a %}junk{% end %}|parent|{% block b %}keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{{x}}|{% extends parent.inc %}{% block a %}aReplacement{% end %}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                return new StringReader(parentTemplate);
+            }
+        });
+        render(lr, childTemplate, model);
+    }
+
+    @Test(expected = Exception.class)
+    public void testInheritanceFailsWithBlockBeforeExtends() {
+        final Object model = Collections.emptyMap();
+        final String parentTemplate = "parentBefore|{% block a %}junk{% end %}|parent|{% block b %}keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{%x%}{%end%}|{% extends parent.inc %}{% block a %}aReplacement{% end %}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                return new StringReader(parentTemplate);
+            }
+        });
+        render(lr, childTemplate, model);
+    }
+
+    @Test(expected = Exception.class)
+    public void testInheritanceFailsWithVarOutsideBlockTag() {
+        final Object model = Collections.emptyMap();
+        final String parentTemplate = "parentBefore|{% block a %}junk{% end %}|parent|{% block b %}keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}aReplacement{% end %}|{{x}}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                return new StringReader(parentTemplate);
+            }
+        });
+        render(lr, childTemplate, model);
+    }
+
+    @Test(expected = Exception.class)
+    public void testInheritanceFailsWithBlockOutsideBlockTag() {
+        final Object model = Collections.emptyMap();
+        final String parentTemplate = "parentBefore|{% block a %}junk{% end %}|parent|{% block b %}keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}aReplacement{% end %}|{%x%}{%end%}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                return new StringReader(parentTemplate);
+            }
+        });
+        render(lr, childTemplate, model);
     }
 
     @Test

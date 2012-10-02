@@ -47,46 +47,48 @@ public class Template {
     }
 
     private void processExtends() {
-        LiquidrodsNode.Block extend = null;
+        String parentTemplate = null;
         boolean nonText = false;
+        Map<String, LiquidrodsNode.Block> blocks = new HashMap<String, LiquidrodsNode.Block>();
         for (LiquidrodsNode node : rootNodes) {
             if (node instanceof LiquidrodsNode.Variable) {
                 nonText = true;
-                if (extend != null) {
-                    throw new RuntimeException("Invalid template: it extends another template yet it defines a top level variable " + node);
+                if (parentTemplate != null) {
+                    throw new RuntimeException("Invalid template: it extends another template yet it defines a top level variable (should be in a block tag)" + node);
                 }
             } else if (node instanceof LiquidrodsNode.Block) {
                 LiquidrodsNode.Block block = (LiquidrodsNode.Block) node;
                 if ("extends".equals(block.getName())) {
-                    if (extend != null) {
-                        throw new RuntimeException("Invalid template: multiple extends directives: found " + node + " while " + extend + " was already defined");
+                    if (parentTemplate != null) {
+                        throw new RuntimeException("Invalid template: multiple extends directives: found " + node + " while and extend with" + parentTemplate + " was already defined");
                     } else if (nonText) {
                         throw new RuntimeException("Invalid template: it extends another template yet it defines a top level variable or block");
                     } else {
-                        extend = block;
+                        parentTemplate = block.getArg();
                     }
+                } else if ("block".equals(block.getName())) {
+                    blocks.put(block.getArg(), block);
                 } else {
                     nonText = true;
-                    if (extend != null) {
+                    if (parentTemplate != null) {
                         throw new RuntimeException("Invalid template: it extends another template yet it defines a top level block " + node);
                     }
                 }
             }
         }
 
-        if (extend != null) {
-            Template parent = Liquidrods.parse(extend.getArg(), config);
-            final Map<String, List<LiquidrodsNode>> defines = processDefines(extend);
+        if (parentTemplate != null) {
+            Template parent = Liquidrods.parse(parentTemplate, config);
             List<LiquidrodsNode> mergedNodes = new ArrayList<LiquidrodsNode>(parent.rootNodes.size());
             for (LiquidrodsNode node : parent.rootNodes) {
                 if (node instanceof LiquidrodsNode.Block) {
                     final LiquidrodsNode.Block block = (LiquidrodsNode.Block) node;
-                    if ("placeholder".equals(block.getName())) {
-                        List<LiquidrodsNode> toInsert = defines.get(block.getArg());
+                    if ("block".equals(block.getName())) {
+                        LiquidrodsNode.Block toInsert = blocks.get(block.getArg());
                         if (toInsert != null) {
-                            mergedNodes.addAll(toInsert);
+                            mergedNodes.add(toInsert);
                         } else {
-                            mergedNodes.addAll(block.getChildren());
+                            mergedNodes.add(block);
                         }
                     } else {
                         mergedNodes.add(block);
