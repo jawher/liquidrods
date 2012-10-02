@@ -233,6 +233,9 @@ public class LiquidrodsParser {
                     }
                 }
             } else {
+                if (!sectionsStack.isEmpty()) {
+                    throw new RuntimeException("Unexpected end of file: was expecting end tag for {% " + popSectionName()[0]+" %}");
+                }
                 return nodes;
             }
         }

@@ -186,6 +186,24 @@ public class LiquidrodsTest {
         assertEquals("before|f.inc|after", render(lr, template, model));
     }
 
+    @Test(expected = Exception.class)
+    public void testUnclosedTag() {
+        String template = "before|{% test %}|after";
+        BlockHandler blockHandler = new BlockHandler() {
+            @Override
+            public boolean wantsCloseTag() {
+                return true;
+            }
+
+            @Override
+            public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
+
+            }
+        };
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), Collections.<String, BlockHandler>singletonMap("test", blockHandler));
+        parser.parse();
+    }
+
     @Test
     public void testInheritance() {
         final Object model = Collections.emptyMap();
