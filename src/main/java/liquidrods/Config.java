@@ -71,6 +71,7 @@ public class Config {
 
     private void registerDefaultHandlers() {
         registerHandler("if", new IfBlock());
+        registerHandler("ifnot", new IfBlock().inverted());
         registerHandler("for", new IterBlock());
         registerHandler("else", new IfBlock.ElseBlock());
         registerHandler("include", new BlockHandler() {

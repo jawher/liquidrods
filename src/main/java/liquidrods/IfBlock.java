@@ -8,8 +8,22 @@ import java.util.Collection;
  * The handler for the if tag. Takes a parameter that'll be evaluated using the current context to decide whether to render its body or not.
  * <p/>
  * If the parameter evaluates to a boolean, it is used as is for the test. Otherwise, null is considered as false and all other values as true.
+ * <p/>
+ * This implementation can be inverted (to implement if not or unless) by calling {@link liquidrods.IfBlock#inverted()}
  */
 public class IfBlock implements BlockHandler {
+
+    private boolean invert = false;
+
+    /**
+     * Inverts this instance to become ifnot or unless
+     *
+     * @return self, for chaining
+     */
+    public IfBlock inverted() {
+        this.invert = true;
+        return this;
+    }
 
     @Override
     public boolean wantsCloseTag() {
@@ -30,6 +44,9 @@ public class IfBlock implements BlockHandler {
             doit = !((Collection) value).isEmpty();
         }
 
+        if (invert) {
+            doit = !doit;
+        }
         for (LiquidrodsNode child : block.getChildren()) {
             if (child instanceof LiquidrodsNode.Block && ("else".equals(((LiquidrodsNode.Block) child).getName()))) {
                 if (doit) {

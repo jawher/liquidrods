@@ -131,6 +131,47 @@ public class LiquidrodsTest {
         assertEquals("y", render(template, model));
     }
 
+
+    @Test
+    public void testIfNotTagHidesBodyWithTrue() {
+        final Object model = Collections.singletonMap("x", true);
+
+        String template = "{% ifnot x %}x{% end %}";
+        assertEquals("", render(template, model));
+    }
+
+    @Test
+    public void testIfNotTagHidersBodyWithString() {
+        final Object model = Collections.singletonMap("x", "x");
+
+        String template = "{% ifnot x %}x{% end %}";
+        assertEquals("", render(template, model));
+    }
+
+    @Test
+    public void testIfNotTagRendersBodyWithFalse() {
+        final Object model = Collections.singletonMap("x", false);
+
+        String template = "{% ifnot x %}x{% end %}";
+        assertEquals("x", render(template, model));
+    }
+
+    @Test
+    public void testIfNotTagRendersBodyWithNull() {
+        final Object model = Collections.emptyMap();
+
+        String template = "{% ifnot x %}x{% end %}";
+        assertEquals("x", render(template, model));
+    }
+
+    @Test
+    public void testIfNotElseTag() {
+        final Object model = Collections.singletonMap("x", false);
+
+        String template = "{% ifnot x %}x{% else %}y{% end %}";
+        assertEquals("x", render(template, model));
+    }
+
     @Test
     public void testForTagIteratesOverLists() {
         final Object model = Collections.singletonMap("xs", Arrays.asList("a", "b"));
