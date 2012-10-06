@@ -101,23 +101,6 @@ public class Template {
         }
     }
 
-    private Map<String, List<LiquidrodsNode>> processDefines(LiquidrodsNode.Block extend) {
-        Map<String, List<LiquidrodsNode>> defines = new HashMap<String, List<LiquidrodsNode>>();
-        for (LiquidrodsNode node : extend.getChildren()) {
-            if (node instanceof LiquidrodsNode.Variable) {
-                throw new RuntimeException("Invalid template: the variable " + node + " must appear inside a define block");
-            } else if (node instanceof LiquidrodsNode.Block) {
-                LiquidrodsNode.Block block = (LiquidrodsNode.Block) node;
-                if ("define".equals(block.getName())) {
-                    defines.put(block.getArg(), block.getChildren());
-                } else {
-                    throw new RuntimeException("Invalid template: the block " + node + " must appear inside a define block");
-                }
-            }
-        }
-        return defines;
-    }
-
     public List<LiquidrodsNode> getRootNodes() {
         return rootNodes;
     }
