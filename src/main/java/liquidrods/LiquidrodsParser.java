@@ -12,21 +12,24 @@ import java.util.regex.Pattern;
  */
 public class LiquidrodsParser {
 
+    private final String filename;
     private final Map<String, BlockHandler> handlers;
 
-    private static class Token {
+    public static class Token {
         private enum Type {
             TEXT, OPEN_VAR, OPEN_TAG, CLOSE_VAR, CLOSE_TAG, OPEN_RAW_VAR, CLOSE_RAW_VAR, EOF
         }
 
         public final Type type;
         public final String value;
+        public final String line;
         public final int row;
         public final int col;
 
-        private Token(Type type, String value, int row, int col) {
+        private Token(Type type, String value, String line, int row, int col) {
             this.type = type;
             this.value = value;
+            this.line = line;
             this.row = row;
             this.col = col;
         }
@@ -55,13 +58,14 @@ public class LiquidrodsParser {
     private String line;
     private Matcher lineMatcher;
     private Token eof = null;
-    private int row = 1, col = 0;
+    private int row = 0, col = 0;
 
     /**
      * @param reader   the reader to be parsed
      * @param handlers The tag handlers keyed by the tag they handle. Used in the parsing to handle body and bodyless tags
      */
-    public LiquidrodsParser(Reader reader, Map<String, BlockHandler> handlers) {
+    public LiquidrodsParser(Reader reader, String filename, Map<String, BlockHandler> handlers) {
+        this.filename = filename;
         this.handlers = handlers;
         this.reader = new BufferedReader(reader);
     }
@@ -69,13 +73,13 @@ public class LiquidrodsParser {
     private void nextLine() {
         try {
             line = reader.readLine();
-            if (row > 1 && line != null) {
+            if (row > 0 && line != null) {
                 line = "\n" + line;
             }
             row++;
             col = 0;
             if (line == null) {
-                eof = new Token(Token.Type.EOF, "$", row, col);
+                eof = new Token(Token.Type.EOF, "$", null, row, col);
             } else {
                 lineMatcher = DELIMITERS.matcher(line);
             }
@@ -86,6 +90,8 @@ public class LiquidrodsParser {
 
     private Token nextToken() {
         StringBuilder text = new StringBuilder();
+        String textFirstLine = null;
+        int textCol = -1, textRow = -1;
         while (true) {
             if (eof != null) {
                 return eof;
@@ -95,7 +101,7 @@ public class LiquidrodsParser {
                 nextLine();
                 if (eof != null) {
                     if (text.length() > 0) {
-                        return new Token(Token.Type.TEXT, text.toString(), col, row);//FIXME: col, row
+                        return new Token(Token.Type.TEXT, text.toString(), textFirstLine, textRow, textCol);
                     } else {
                         return eof;
                     }
@@ -106,7 +112,7 @@ public class LiquidrodsParser {
                 String caught = lineMatcher.group();
                 if (lineMatcher.start() > col || text.length() > 0) {
                     text.append(line.substring(col, lineMatcher.start()));
-                    final Token res = new Token(Token.Type.TEXT, text.toString(), col, row);
+                    final Token res = new Token(Token.Type.TEXT, text.toString(), line, row, col);
                     col = lineMatcher.start();
                     return res;
                 } else {
@@ -124,21 +130,40 @@ public class LiquidrodsParser {
                     } else if (caught.equals(CLOSE_TAG_S)) {
                         type = Token.Type.CLOSE_TAG;
                     } else {
-                        throw new RuntimeException("bug !");
+                        throw new ParseException("Bug !", filename, line, row, col);
                     }
-                    Token res = new Token(type, caught, row, col);
+                    Token res = new Token(type, caught, line, row, col);
                     col = lineMatcher.end();
                     return res;
                 }
             } else {
+                if (text.length() == 0) {
+                    textFirstLine = line;
+                    textCol = col;
+                    textRow = row;
+                }
                 text.append(line.substring(col));
+
                 line = null;
             }
         }
     }
 
     private Token current;
-    private List<String[]> sectionsStack = new ArrayList<String[]>();
+
+    private static class SectionData {
+        public final String name;
+        public final String arg;
+        public final Token posToken;
+
+        private SectionData(String name, String arg, Token posToken) {
+            this.name = name;
+            this.arg = arg;
+            this.posToken = posToken;
+        }
+    }
+
+    private List<SectionData> sectionsStack = new ArrayList<SectionData>();
 
     private void advance() {
         current = nextToken();
@@ -156,7 +181,7 @@ public class LiquidrodsParser {
     public List<LiquidrodsNode> parse() {
         final List<LiquidrodsNode> rootNodes = start();
         if (!is(Token.Type.EOF)) {
-            throw new RuntimeException("Was expecting EOF but got " + current);
+            throw new ParseException("Was expecting EOF but got " + current, filename, current.line, row, col);
         }
         return rootNodes;
     }
@@ -166,89 +191,100 @@ public class LiquidrodsParser {
         while (true) {
             advance();
             if (is(Token.Type.TEXT)) {
-                nodes.add(new LiquidrodsNode.Text(current.value));
+                nodes.add(new LiquidrodsNode.Text(current.value, filename, row, col));
             } else if (is(Token.Type.OPEN_RAW_VAR)) {
+                Token posToken = current;
                 advance();
                 if (is(Token.Type.TEXT)) {
-                    nodes.add(new LiquidrodsNode.Variable(current.value.trim(), true));
+                    String name = current.value.trim();
+                    if (name.isEmpty()) {
+                        throw new ParseException("Variable name cannot be empty", filename, current);
+                    }
+                    nodes.add(new LiquidrodsNode.Variable(name, true, filename, posToken.row, posToken.col));
                 } else {
-                    throw new RuntimeException("Was expecting a variable id but got " + current);
+                    throw new ParseException("Was expecting a variable name but got " + current, filename, current);
                 }
                 advance();
                 if (!is(Token.Type.CLOSE_RAW_VAR)) {
-                    throw new RuntimeException("Was expecting a close pair but got " + current);
+                    throw new ParseException("Was expecting close brackets '}}}' but got " + current, filename, current);
                 }
             } else if (is(Token.Type.OPEN_VAR)) {
+                Token posToken = current;
                 advance();
+
                 if (is(Token.Type.TEXT)) {
-                    nodes.add(new LiquidrodsNode.Variable(current.value.trim(), false));
+                    nodes.add(new LiquidrodsNode.Variable(current.value.trim(), false, filename, posToken.row, posToken.col));
                 } else {
-                    throw new RuntimeException("Was expecting a variable id but got " + current);
+                    throw new ParseException("Was expecting a variable name but got " + current, filename, current);
                 }
                 advance();
                 if (!is(Token.Type.CLOSE_VAR)) {
-                    throw new RuntimeException("Was expecting a close pair but got " + current);
+                    throw new ParseException("Was expecting close brackets '}}' but got " + current, filename, current);
                 }
             } else if (is(Token.Type.OPEN_TAG)) {
+                Token posToken = current;
                 String name;
                 String arg = null;
                 advance();
                 if (is(Token.Type.TEXT)) {
+
                     String[] names = current.value.trim().split("\\s+");
                     if (names.length != 1 && names.length != 2) {
-                        throw new RuntimeException("tags can have a name and an optional arg in ''" + current);
+                        throw new ParseException("tags must have a name and at most *one* optional arg", filename, current);
                     }
-                    name = names[0];
-                    if (names.length > 1) {
-                        arg = names[1];
+                    name = names[0].trim();
+                    if (name.isEmpty()) {
+                        throw new ParseException("A tag name must be specified", filename, posToken.line, row, col);
                     }
+                    if (names.length > 1 && !names[1].trim().isEmpty()) {
+                        arg = names[1].trim();
+                    }
+
                 } else {
-                    throw new RuntimeException("Was expecting a section name but got " + current);
+                    throw new ParseException("Was expecting a tag name but got " + current, filename, current);
                 }
 
                 advance();
                 if (!is(Token.Type.CLOSE_TAG)) {
-                    throw new RuntimeException("Was expecting %} but got " + current);
+                    throw new ParseException("Was expecting '%}' but got " + current, filename, current);
                 }
 
                 if ("end".equals(name)) {
                     if (sectionsStack.isEmpty()) {
-                        throw new RuntimeException("Unexpected end tag found: no matching open tag " + current);
+                        throw new ParseException("Unexpected end tag found: no currently open tags", filename, posToken);
                     } else {
-                        String[] openSectionData = popSectionName();
-                        String openSectionName = openSectionData[0];
-                        String openSectionArg = openSectionData[1];
-                        if (arg != null && !arg.equals(openSectionName)) {
-                            throw new RuntimeException("Unbalanced close tag found " + arg + " (was expecting close tag for " + openSectionName + ")");
+                        SectionData section = popSection();
+                        if (arg != null && !arg.equals(section.name)) {
+                            throw new ParseException("Unbalanced close tag found: tries to close the '" + arg + "' tag whereas the currently open tag is named '" + section.name + "' (defined @ " + section.posToken.row + ":" + section.posToken.col + ")", filename, posToken);
                         }
-                        return Arrays.<LiquidrodsNode>asList(new LiquidrodsNode.Block(openSectionName, openSectionArg, nodes));
+                        return Arrays.<LiquidrodsNode>asList(new LiquidrodsNode.Block(section.name, section.arg, nodes, filename, section.posToken.row, section.posToken.col));
                     }
                 } else {
                     BlockHandler handler = handlers.get(name);
                     if (handler != null && !handler.wantsCloseTag()) {
-                        nodes.add(new LiquidrodsNode.Block(name, arg, Collections.<LiquidrodsNode>emptyList()));
+                        nodes.add(new LiquidrodsNode.Block(name, arg, Collections.<LiquidrodsNode>emptyList(), filename, posToken.row, posToken.col));
                     } else {
-                        pushSectionName(name, arg);
+                        pushSection(new SectionData(name, arg, posToken));
                         nodes.addAll(start());
                     }
                 }
             } else {
                 if (!sectionsStack.isEmpty()) {
-                    throw new RuntimeException("Unexpected end of file: was expecting end tag for {% " + popSectionName()[0]+" %}");
+                    SectionData section = popSection();
+                    throw new ParseException("Unexpected end of file: was expecting end tag for the tag '" + section.name + "' opened @ (" + section.posToken.row + ", " + section.posToken.col + ")", filename, current.line, row, col);
                 }
                 return nodes;
             }
         }
     }
 
-    private void pushSectionName(String name, String arg) {
-        sectionsStack.add(new String[]{name, arg});
+    private void pushSection(SectionData section) {
+        sectionsStack.add(section);
     }
 
-    private String[] popSectionName() {
-        String[] res = sectionsStack.get(sectionsStack.size() - 1);
+    private SectionData popSection() {
+        SectionData res = sectionsStack.get(sectionsStack.size() - 1);
         sectionsStack.remove(sectionsStack.size() - 1);
         return res;
     }
-
 }

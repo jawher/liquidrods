@@ -227,24 +227,6 @@ public class LiquidrodsTest {
         assertEquals("before|f.inc|after", render(lr, template, model));
     }
 
-    @Test(expected = Exception.class)
-    public void testUnclosedTag() {
-        String template = "before|{% test %}|after";
-        BlockHandler blockHandler = new BlockHandler() {
-            @Override
-            public boolean wantsCloseTag() {
-                return true;
-            }
-
-            @Override
-            public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
-
-            }
-        };
-        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), Collections.<String, BlockHandler>singletonMap("test", blockHandler));
-        parser.parse();
-    }
-
     @Test
     public void testInheritance() {
         final Object model = Collections.emptyMap();
@@ -441,6 +423,108 @@ public class LiquidrodsTest {
             }
         });
         assertEquals("thresh|custom:y_textb|thresh", render(lr, template, model));
+    }
+
+    @Test(expected = ParseException.class)
+    public void testUnclosedTag() {
+        String template = "before|{% test %}|after";
+        BlockHandler blockHandler = new BlockHandler() {
+            @Override
+            public boolean wantsCloseTag() {
+                return true;
+            }
+
+            @Override
+            public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
+
+            }
+        };
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>singletonMap("test", blockHandler));
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testEmptyVariableName() {
+        String template = "{{ {%";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testNoVariableName() {
+        String template = "{{%}";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testUnclosedVariable() {
+        String template = "{{a{{";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testEmptyRawVariableName() {
+        String template = "{{{ {%";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testNoRawVariableName() {
+        String template = "{{{{%";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testUnclosedRawVariable() {
+        String template = "{{{a{{";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testTagWithNoName() {
+        String template = "{%{{";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testTagWithEmptyName() {
+        String template = "{% {{";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testTagWith2Args() {
+        String template = "{% a b c";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testTagWithoutClosePair() {
+        String template = "{% a b {{";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testEndTagWithoutAnyOpenTags() {
+        String template = "{% end %}";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
+    }
+
+    @Test(expected = ParseException.class)
+    public void testEndTagWithoutMatchingOpenTag() {
+        String template = "{% a %} {% end b %}";
+        LiquidrodsParser parser = new LiquidrodsParser(new StringReader(template), "<template>", Collections.<String, BlockHandler>emptyMap());
+        parser.parse();
     }
 
 }

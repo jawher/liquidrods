@@ -6,6 +6,34 @@ import java.util.List;
  * Represents a node in the template DOM. Not to be confused with the HTML/XML DOM as Liquidrods works with any textual input.
  */
 public abstract class LiquidrodsNode {
+    protected String filename;
+    protected int row, col;
+
+    /**
+     * The filename this node appears in
+     * @return The filename this node appears in
+     */
+    public String getFilename() {
+        return filename;
+    }
+
+    /**
+     * The row of this node (1-indexed)
+     *
+     * @return The row of this node (1-indexed)
+     */
+    public int getRow() {
+        return row;
+    }
+
+    /**
+     * The col of this node (0-indexed)
+     *
+     * @return The col of this node (0-indexed)
+     */
+    public int getCol() {
+        return col;
+    }
 
     /**
      * Represents a text chunk from the template.
@@ -13,8 +41,18 @@ public abstract class LiquidrodsNode {
     public static class Text extends LiquidrodsNode {
         private String value;
 
-        public Text(String value) {
+        /**
+         *
+         * @param value the textual value
+         * @param filename the file this node appears in
+         * @param row the node row
+         * @param col the node col
+         */
+        public Text(String value, String filename, int row, int col) {
             this.value = value;
+            this.filename = filename;
+            this.row = row;
+            this.col = col;
         }
 
         public String getValue() {
@@ -41,10 +79,16 @@ public abstract class LiquidrodsNode {
         /**
          * @param name the variable name
          * @param raw  whether the variable value is to be rendered as is (raw) or escaped
+         * @param filename the file this node appears in
+         * @param row the node row
+         * @param col the node col
          */
-        public Variable(String name, boolean raw) {
+        public Variable(String name, boolean raw, String filename, int row, int col) {
             this.name = name;
             this.raw = raw;
+            this.filename = filename;
+            this.row = row;
+            this.col = col;
         }
 
         public String getName() {
@@ -81,11 +125,17 @@ public abstract class LiquidrodsNode {
          * @param name     the tag name
          * @param arg      an optional tag parameter
          * @param children the tag's body
+         * @param filename the file this node appears in
+         * @param row the node row
+         * @param col the node col
          */
-        public Block(String name, String arg, List<LiquidrodsNode> children) {
+        public Block(String name, String arg, List<LiquidrodsNode> children, String filename, int row, int col) {
             this.name = name;
             this.arg = arg;
             this.children = children;
+            this.filename = filename;
+            this.row = row;
+            this.col = col;
         }
 
         public String getName() {

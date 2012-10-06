@@ -23,7 +23,8 @@ public class Liquidrods {
      * @return a parsed, ready for use template
      */
     public static Template parse(String name) {
-        return parse(defaultConfig.templateLoader().load(name));
+        List<LiquidrodsNode> rootNodes = new LiquidrodsParser(defaultConfig.templateLoader().load(name), name, defaultConfig.handlers()).parse();
+        return new Template(rootNodes, defaultConfig);
     }
 
     /**
@@ -34,7 +35,8 @@ public class Liquidrods {
      * @return a parsed, ready for use template
      */
     public static Template parse(String name, Config config) {
-        return parse(config.templateLoader().load(name), config);
+        List<LiquidrodsNode> rootNodes = new LiquidrodsParser(config.templateLoader().load(name), name, defaultConfig.handlers()).parse();
+        return new Template(rootNodes, config);
     }
 
     /**
@@ -44,7 +46,7 @@ public class Liquidrods {
      * @return a parsed, ready for use template
      */
     public static Template parse(Reader reader) {
-        List<LiquidrodsNode> rootNodes = new LiquidrodsParser(reader, defaultConfig.handlers()).parse();
+        List<LiquidrodsNode> rootNodes = new LiquidrodsParser(reader, "<reader>", defaultConfig.handlers()).parse();
         return new Template(rootNodes, defaultConfig);
     }
 
@@ -56,7 +58,7 @@ public class Liquidrods {
      * @return a parsed, ready for use template
      */
     public static Template parse(Reader reader, Config config) {
-        List<LiquidrodsNode> rootNodes = new LiquidrodsParser(reader, config.handlers()).parse();
+        List<LiquidrodsNode> rootNodes = new LiquidrodsParser(reader, "<reader>", config.handlers()).parse();
         return new Template(rootNodes, config);
     }
 }
