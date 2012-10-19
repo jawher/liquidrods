@@ -119,7 +119,8 @@ public class Config {
 
             @Override
             public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
-                // nop. Mommy Template will take care of me
+
+                throw new RuntimeException("Invalid use of super in "+block.getFilename()+" @ "+block.getRow()+":"+block.getCol()+". It should be placed in a block tag that redefines a parent block. ");
             }
         });
     }

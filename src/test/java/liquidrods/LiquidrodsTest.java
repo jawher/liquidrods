@@ -337,6 +337,33 @@ public class LiquidrodsTest {
     }
 
     @Test(expected = Exception.class)
+    public void testSuperInATemplateWithoutExtends() {
+        final Object model = Collections.emptyMap();
+        String template = "thresh|{% block a %}{% super %}{% end %}|thresh";
+        assertEquals("parentBefore|keep that keep|parentAfter", render(template, model));
+    }
+
+    @Test(expected = Exception.class)
+    public void testSuperInATemplateOutsideBlock() {
+        final Object model = Collections.emptyMap();
+        String template = "thresh|{% super %}|thresh";
+        assertEquals("parentBefore|keep that keep|parentAfter", render(template, model));
+    }
+
+    public void testSuperPlaysNicelyWithOtherTags() {
+        final Object model = Collections.singletonMap("xs", Arrays.asList(1, 2));
+        final String parentTemplate = "parentBefore|{% block a %}Keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}{% for xs %}{% super %}{{.}}{% end %}{% end %}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                return new StringReader(parentTemplate);
+            }
+        });
+        assertEquals("parentBefore|Keep1Keep2|parentAfter", render(lr, childTemplate, model));
+    }
+
+    @Test(expected = Exception.class)
     public void testInheritanceFailsWithVarBeforeExtends() {
         final Object model = Collections.emptyMap();
         final String parentTemplate = "parentBefore|{% block a %}junk{% end %}|parent|{% block b %}keep{% end %}|parentAfter";
