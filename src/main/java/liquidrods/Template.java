@@ -86,6 +86,7 @@ public class Template {
                     if ("block".equals(block.getName())) {
                         LiquidrodsNode.Block toInsert = blocks.get(block.getArg());
                         if (toInsert != null) {
+                            handleSuperCalls(toInsert, block);
                             mergedNodes.add(toInsert);
                         } else {
                             mergedNodes.add(block);
@@ -99,6 +100,24 @@ public class Template {
             }
             this.rootNodes = mergedNodes;
         }
+    }
+
+    private void handleSuperCalls(LiquidrodsNode.Block child, LiquidrodsNode.Block parent) {
+        List<LiquidrodsNode> nodes = new ArrayList<LiquidrodsNode>(child.getChildren().size());
+        for (LiquidrodsNode node : child.getChildren()) {
+            if (node instanceof LiquidrodsNode.Block) {
+                LiquidrodsNode.Block block = (LiquidrodsNode.Block) node;
+                if ("super".equals(block.getName())) {
+                    nodes.addAll(parent.getChildren());
+                } else {
+                    handleSuperCalls(block, parent);
+                    nodes.add(block);
+                }
+            } else {
+                nodes.add(node);
+            }
+        }
+        child.setChildren(nodes);
     }
 
     public List<LiquidrodsNode> getRootNodes() {

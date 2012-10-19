@@ -110,6 +110,18 @@ public class Config {
                 }
             }
         });
+
+        registerHandler("super", new BlockHandler() {
+            @Override
+            public boolean wantsCloseTag() {
+                return false;
+            }
+
+            @Override
+            public void render(LiquidrodsNode.Block block, Context context, Config config, Writer out) throws IOException {
+                // nop. Mommy Template will take care of me
+            }
+        });
     }
 
     private Renderer defaultRenderer = new Renderer() {

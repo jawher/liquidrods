@@ -289,6 +289,53 @@ public class LiquidrodsTest {
         assertEquals("parent0Before|aReplacement|parent|bReplacement|cReplacement|dReplacement|parent0After", render(lr, childTemplate, model));
     }
 
+    @Test
+    public void testSuper() {
+        final Object model = Collections.emptyMap();
+        final String parentTemplate = "parentBefore|{% block a %}keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}{% super %} that {% super %}{% end %}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                return new StringReader(parentTemplate);
+            }
+        });
+        assertEquals("parentBefore|keep that keep|parentAfter", render(lr, childTemplate, model));
+    }
+
+    @Test
+    public void test2LevelSuper() {
+        final Object model = Collections.emptyMap();
+        final String grandpaTemplate = "grandpaBefore|{% block a %}keep{% end %}|grandpaAfter";
+        final String dadTemplate = "{% extends grandpa.inc %}parentBefore|nothing|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}{% super %} that {% super %}{% end %}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                if ("grandpa.inc".equals(name)) {
+                    return new StringReader(grandpaTemplate);
+                } else if ("parent.inc".equals(name)) {
+                    return new StringReader(dadTemplate);
+                } else return null;
+            }
+        });
+        assertEquals("grandpaBefore|keep that keep|grandpaAfter", render(lr, childTemplate, model));
+    }
+
+    @Test
+    public void testSuperInATag() {
+        final Object model = Collections.emptyMap();
+        final String parentTemplate = "parentBefore|{% block a %}keep{% end %}|parentAfter";
+        String childTemplate = "thresh|{% extends parent.inc %}{% block a %}{% block b %}{% super %} that {% super %}{% end %}{% end %}|thresh";
+        Config lr = new Config().templateLoader(new Config.TemplateLoader() {
+            @Override
+            public Reader load(String name) {
+                return new StringReader(parentTemplate);
+            }
+        });
+        assertEquals("parentBefore|keep that keep|parentAfter", render(lr, childTemplate, model));
+    }
+
     @Test(expected = Exception.class)
     public void testInheritanceFailsWithVarBeforeExtends() {
         final Object model = Collections.emptyMap();
