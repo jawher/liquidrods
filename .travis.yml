@@ -6,3 +6,4 @@ jdk:
 env:
   - X=42
   - X=666
+  - Y=true
