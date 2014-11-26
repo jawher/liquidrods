@@ -1,3 +1,8 @@
 language: java
 jdk:
   - openjdk6
+  - openjdk7
+  - oraclejdk8
+env:
+  - X=42
+  - X=666
